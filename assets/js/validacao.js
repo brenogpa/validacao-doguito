@@ -40,12 +40,27 @@ const mensagensDeErro = {
     cpf: {
         valueMissing: 'O campo de CPF não pode estar vazio.',
         customError: 'O CPF digitado é inválido.'
+    },
+    cep: {
+        valueMissing: 'O campo CEP não pode estar vazio.',
+        patternMismatch: 'O CEP digitado é inválido.',
+        customError: 'CEP inválido.'
+    },
+    logradouro: {
+        valueMissing: 'O campo Logradouro não pode estar vazio.'
+    },
+    cidade: {
+        valueMissing: 'O campo Cidade não pode estar vazio.'
+    },
+    estado: {
+        valueMissing: 'O campo Estado não pode estar vazio.'
     }
 };
 
 const validadores = {
     dataNascimento:input => validaDataNascimento(input),
-    cpf:input => validaCPF(input)
+    cpf:input => validaCPF(input),
+    cep:input => recuperarCEP(input)
 };
 
 function mostraMensagemDeErro(tipoDeInput, input) {
@@ -143,4 +158,42 @@ function chegaDigitoVerificador(cpf, multiplicador) {
 
 function confirmaDigito(soma) {
     return 11 - (soma % 11);
+}
+
+function recuperarCEP(input) {
+    const cep = input.value.replace(/\D/g, '')
+    const url = `https://viacep.com.br/ws/${cep}/json/`
+    const options = {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+            'content-type': 'application/json;charset=utf-8'
+        }
+    }
+
+    if (!input.validity.patternMismatch && !input.validity.valueMissing) {
+        fetch(url, options).then(
+            response => response.json()
+        ).then(
+            data => {
+                if (data.erro) {
+                    input.setCustomValidity('CEP inválido.')
+                    return
+                }
+                input.setCustomValidity('')
+                preencheCamposComCEP(data)
+                return
+            }
+        )
+    }
+}
+
+function preencheCamposComCEP(data) {
+    const logradouro = document.querySelector('[data-tipo="logradouro"]')
+    const cidade = document.querySelector('[data-tipo="cidade"]')
+    const estado = document.querySelector('[data-tipo="estado"]')
+
+    logradouro.value = data.logradouro
+    cidade.value = data.localidade
+    estado.value = data.uf
 }
